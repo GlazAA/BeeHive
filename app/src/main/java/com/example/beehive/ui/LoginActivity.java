@@ -1,10 +1,4 @@
 // Файл: LoginActivity.java
-// Пакет: com.example.beehive.ui
-// Связан с: activity_login.xml, UserRepository.java, MainActivity.java
-// Методы: onCreate(...), initViews(), setupListeners(), attemptLogin()
-// Назначение: Экран входа. Проверяет логин/пароль и запускает MainActivity.
-
-// Файл: LoginActivity.java
 package com.example.beehive.ui;
 
 import android.content.Intent;
@@ -16,9 +10,14 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
+
 import androidx.appcompat.app.AppCompatActivity;
+
 import com.example.beehive.R;
+import com.example.beehive.ui.model.User;
 import com.example.beehive.ui.repository.UserRepository;
+import com.example.beehive.ui.sync.SyncScheduler;
+
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -30,28 +29,22 @@ public class LoginActivity extends AppCompatActivity {
     private TextView tvError;
 
     private UserRepository userRepository;
-    private ExecutorService executorService; // Для фоновых задач
-    private Handler mainHandler; // Для возврата в главный поток
+    private ExecutorService executorService;
+    private Handler mainHandler;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_login);
 
-        // Инициализируем репозиторий
         userRepository = new UserRepository(this);
-        
-        // Создаем пул потоков (один поток)
         executorService = Executors.newSingleThreadExecutor();
         mainHandler = new Handler(Looper.getMainLooper());
 
-        // Находим view по id
         initViews();
-
-        // Устанавливаем слушатели
         setupListeners();
 
-        // Создаем тестовых пользователей в фоновом потоке
+        // ВАЖНО: создаем пользователей в фоновом потоке!
         createDefaultUsersInBackground();
     }
 
@@ -72,24 +65,19 @@ public class LoginActivity extends AppCompatActivity {
     }
 
     private void createDefaultUsersInBackground() {
-        // Выполняем в фоновом потоке
         executorService.execute(new Runnable() {
             @Override
             public void run() {
-                // Это выполняется в фоновом потоке
+                // Это выполняется в фоновом потоке - безопасно для БД
                 userRepository.createDefaultUsersIfNeeded();
-                
-                // После завершения можно ничего не делать в UI
             }
         });
     }
 
     private void attemptLogin() {
-        // Получаем введенные данные
         String username = editUsername.getText().toString().trim();
         String password = editPassword.getText().toString().trim();
 
-        // Простейшая валидация
         if (username.isEmpty()) {
             editUsername.setError("Введите логин");
             return;
@@ -99,33 +87,40 @@ public class LoginActivity extends AppCompatActivity {
             return;
         }
 
-        // Отключаем кнопку, чтобы не было двойного нажатия
         btnLogin.setEnabled(false);
         tvError.setVisibility(View.GONE);
 
-        // Выполняем проверку пароля в фоновом потоке
         executorService.execute(new Runnable() {
             @Override
             public void run() {
-                // Это выполняется в фоновом потоке
                 boolean isPasswordCorrect = userRepository.checkUserPassword(username, password);
 
-                // Возвращаемся в главный поток для обновления UI
                 mainHandler.post(new Runnable() {
                     @Override
                     public void run() {
                         if (isPasswordCorrect) {
-                            // Успешный вход
-                            Toast.makeText(LoginActivity.this, 
-                                "Добро пожаловать, " + username + "!", 
-                                Toast.LENGTH_SHORT).show();
+                            User currentUser = userRepository.getUserByUsername(username);
+                            
+                            if (currentUser != null) {
+                                Toast.makeText(LoginActivity.this, 
+                                    "Добро пожаловать, " + username + "!", 
+                                    Toast.LENGTH_SHORT).show();
 
-                            Intent intent = new Intent(LoginActivity.this, MainActivity.class);
-                            intent.putExtra("username", username);
-                            startActivity(intent);
-                            finish();
+                                Intent intent = new Intent(LoginActivity.this, MainActivity.class);
+                                intent.putExtra("username", username);
+                                intent.putExtra("userId", currentUser.getId());
+                                
+                                int roleId = userRepository.getUserRoleId(currentUser.getId());
+                                intent.putExtra("userRole", roleId == 1 ? "Admin" : "Child");
+                                
+                                startActivity(intent);
+                                finish();
+                            } else {
+                                tvError.setVisibility(View.VISIBLE);
+                                tvError.setText("Ошибка при загрузке пользователя");
+                                btnLogin.setEnabled(true);
+                            }
                         } else {
-                            // Ошибка входа
                             tvError.setVisibility(View.VISIBLE);
                             tvError.setText("Неверный логин или пароль");
                             btnLogin.setEnabled(true);
@@ -139,7 +134,6 @@ public class LoginActivity extends AppCompatActivity {
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        // Завершаем executor, чтобы не было утечек памяти
         if (executorService != null) {
             executorService.shutdown();
         }

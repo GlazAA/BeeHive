@@ -2,6 +2,7 @@
 <!-- Файл: item_entry.xml -->
 <!-- Связан с: EntriesFragment.java, EntryAdapter.java -->
 <!-- Назначение: макет отдельной карточки записи в списке -->
+<!-- относится к EntryAdapter.java отвечает за список записей-->
 
 <com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"

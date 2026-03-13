@@ -16,7 +16,7 @@ import java.util.List;
 public interface EntryDao {
 
     @Insert
-    void insert(Entry entry);
+    long insert(Entry entry);
 
     @Update
     void update(Entry entry);
