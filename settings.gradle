@@ -1,0 +1,3 @@
+rootProject.name = "BeeHive"
+include(":app")
+include ':app'
