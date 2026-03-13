@@ -29,10 +29,17 @@ public class MainActivity extends AppCompatActivity {
     private SyncManager syncManager;
     private TextView syncStatusText;
 
+    private int userId;
+    private String userRole;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        
+        // Получаем данные пользователя из Intent
+        userId = getIntent().getIntExtra("userId", -1);
+        userRole = getIntent().getStringExtra("userRole");
 
         initViews();
         initSyncManager();
@@ -123,9 +130,6 @@ public class MainActivity extends AppCompatActivity {
             fabAdd.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
-                    // Получаем текущего пользователя (нужно передать из LoginActivity)
-                    int userId = 1; // Временно
-                    String userRole = "Admin"; // Временно
                     AddEntryDialog dialog = AddEntryDialog.newInstance(userId, userRole);
                     dialog.show(getSupportFragmentManager(), "AddEntryDialog");
                 }

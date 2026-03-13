@@ -16,7 +16,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import com.example.beehive.R;
 import com.example.beehive.ui.model.User;
 import com.example.beehive.ui.repository.UserRepository;
-import com.example.beehive.ui.security.PasswordHasher;
+import com.example.beehive.ui.security.PasswordHasher; // ДОБАВЛЕН ИМПОРТ
 
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -80,6 +80,7 @@ public class LoginActivity extends AppCompatActivity {
 
         executorService.execute(() -> {
             User user = userRepository.getUserByUsername(username);
+            // Используем PasswordHasher для проверки пароля
             boolean isPasswordCorrect = (user != null) && PasswordHasher.checkPassword(password, user.getPasswordHash());
 
             if (isPasswordCorrect) {

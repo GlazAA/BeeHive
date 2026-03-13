@@ -1,8 +1,10 @@
 // Файл: AddEntryDialog.java
+// Назначение: Диалоговое окно для добавления и редактирования записей.
 package com.example.beehive.ui;
 
 import android.app.AlertDialog;
 import android.app.Dialog;
+import android.content.res.ColorStateList;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -15,6 +17,7 @@ import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.core.content.ContextCompat;
 import androidx.fragment.app.DialogFragment;
 
 import com.example.beehive.R;
@@ -72,6 +75,7 @@ public class AddEntryDialog extends DialogFragment {
         initViews(view);
         setupTypeSpinner();
         setupVisibilityChips();
+        setupDayChips();
 
         builder.setView(view)
                 .setTitle("Новая запись");
@@ -84,26 +88,24 @@ public class AddEntryDialog extends DialogFragment {
 
     private void initViews(View view) {
         spinnerType = view.findViewById(R.id.spinnerType);
-    layoutPassword = view.findViewById(R.id.layoutPassword);
-    layoutLesson = view.findViewById(R.id.layoutLesson);
-    editTitle = view.findViewById(R.id.editTitle);
-    
-    // Поля для пароля
-    editLogin = view.findViewById(R.id.editLoginPassword);        // Было: editLogin
-    editPassword = view.findViewById(R.id.editPasswordField);     // Было: editPassword
-    editComment = view.findViewById(R.id.editCommentPassword);    // Было: editComment
-    
-    // Поля для занятия
-    editUrl = view.findViewById(R.id.editUrl);
-    editStartTime = view.findViewById(R.id.editStartTime);
-    // Для занятия используем другие поля:
-    // editLoginLesson, editPasswordLesson, editCommentLesson
-    
-    chipGroupDays = view.findViewById(R.id.chipGroupDays);
-    chipGroupVisibility = view.findViewById(R.id.chipGroupVisibility);
-    btnSave = view.findViewById(R.id.btnSave);
-    btnCancel = view.findViewById(R.id.btnCancel);
-}
+        layoutPassword = view.findViewById(R.id.layoutPassword);
+        layoutLesson = view.findViewById(R.id.layoutLesson);
+        editTitle = view.findViewById(R.id.editTitle);
+
+        // Поля для "Пароля"
+        editLogin = view.findViewById(R.id.editLoginPassword);
+        editPassword = view.findViewById(R.id.editPasswordField);
+        editComment = view.findViewById(R.id.editCommentPassword);
+
+        // Поля для "Занятия"
+        editUrl = view.findViewById(R.id.editUrl);
+        editStartTime = view.findViewById(R.id.editStartTime);
+
+        chipGroupDays = view.findViewById(R.id.chipGroupDays);
+        chipGroupVisibility = view.findViewById(R.id.chipGroupVisibility);
+        btnSave = view.findViewById(R.id.btnSave);
+        btnCancel = view.findViewById(R.id.btnCancel);
+    }
 
     private void setupTypeSpinner() {
         String[] types = {"Пароль", "Занятие"};
@@ -123,18 +125,45 @@ public class AddEntryDialog extends DialogFragment {
                     layoutLesson.setVisibility(View.VISIBLE);
                 }
             }
-
             @Override
             public void onNothingSelected(android.widget.AdapterView<?> parent) {}
         });
     }
 
     private void setupVisibilityChips() {
-        // Для ребенка блокируем выбор видимости пароля
+        chipGroupVisibility.setSingleSelection(true);
         if ("Child".equals(currentUserRole)) {
             for (int i = 0; i < chipGroupVisibility.getChildCount(); i++) {
                 chipGroupVisibility.getChildAt(i).setEnabled(false);
             }
+        } else {
+             for (int i = 0; i < chipGroupVisibility.getChildCount(); i++) {
+                Chip chip = (Chip) chipGroupVisibility.getChildAt(i);
+                chip.setCheckable(true);
+                chip.setOnCheckedChangeListener((buttonView, isChecked) -> {
+                     updateChipAppearance(chip, isChecked);
+                });
+            }
+        }
+    }
+
+    private void setupDayChips(){
+        for (int i = 0; i < chipGroupDays.getChildCount(); i++) {
+            Chip chip = (Chip) chipGroupDays.getChildAt(i);
+            chip.setCheckable(true);
+            chip.setOnCheckedChangeListener((buttonView, isChecked) -> {
+                updateChipAppearance(chip, isChecked);
+            });
+        }
+    }
+
+    private void updateChipAppearance(Chip chip, boolean isChecked) {
+        if (isChecked) {
+            chip.setChipBackgroundColor(ColorStateList.valueOf(ContextCompat.getColor(requireContext(), R.color.purple_500)));
+            chip.setTextColor(ColorStateList.valueOf(ContextCompat.getColor(requireContext(), R.color.white)));
+        } else {
+            chip.setChipBackgroundColor(ColorStateList.valueOf(ContextCompat.getColor(requireContext(), R.color.grey)));
+            chip.setTextColor(ColorStateList.valueOf(ContextCompat.getColor(requireContext(), R.color.black)));
         }
     }
 
@@ -146,42 +175,67 @@ public class AddEntryDialog extends DialogFragment {
         }
 
         EntryType type = spinnerType.getSelectedItemPosition() == 0 ? EntryType.PASSWORD : EntryType.LESSON;
-        String login = editLogin.getText().toString().trim();
-        String password = editPassword.getText().toString().trim();
-        String comment = editComment.getText().toString().trim();
-        String url = editUrl.getText().toString().trim();
-        String startTime = editStartTime.getText().toString().trim();
+        String login = "";
+        String password = "";
+        String comment = "";
+        String url = "";
+        String startTime = "";
+        String daysString = "";
 
-        // Получаем выбранные дни
-        List<Integer> selectedDays = new ArrayList<>();
-        for (int id : chipGroupDays.getCheckedChipIds()) {
-            Chip chip = chipGroupDays.findViewById(id);
-            if (chip != null) {
-                String dayText = chip.getText().toString();
-                int day = convertDayToNumber(dayText);
-                if (day > 0) selectedDays.add(day);
+        if (type == EntryType.PASSWORD) {
+            login = editLogin.getText().toString().trim();
+            password = editPassword.getText().toString().trim();
+            comment = editComment.getText().toString().trim();
+        } else {
+            url = editUrl.getText().toString().trim();
+            startTime = editStartTime.getText().toString().trim();
+            // Используем те же поля для логина, пароля и комментария
+            login = editLogin.getText().toString().trim(); 
+            password = editPassword.getText().toString().trim();
+            comment = editComment.getText().toString().trim();
+            
+            List<Integer> selectedDays = new ArrayList<>();
+            for (int id : chipGroupDays.getCheckedChipIds()) {
+                Chip chip = chipGroupDays.findViewById(id);
+                if (chip != null) {
+                    selectedDays.add(convertDayToNumber(chip.getText().toString()));
+                }
+            }
+            daysString = android.text.TextUtils.join(",", selectedDays);
+        }
+
+        int visibilityOption = 2; // 2 = 'Только я' по-умолчанию
+        int checkedId = chipGroupVisibility.getCheckedChipId();
+        if (checkedId != View.NO_ID) {
+            Chip selectedChip = chipGroupVisibility.findViewById(checkedId);
+            String chipText = selectedChip.getText().toString();
+            if (chipText.equalsIgnoreCase("Все")) {
+                visibilityOption = 0;
+            } else if (chipText.equalsIgnoreCase("Только родители")) {
+                visibilityOption = 1;
             }
         }
-        String daysString = selectedDays.isEmpty() ? "" : android.text.TextUtils.join(",", selectedDays);
+        
+        Entry entry = new Entry(0, title, type.name(), url, login, password, daysString, startTime, comment, false, currentUserId);
 
-        // Получаем видимость
-        int visibilityOption = 0; // 0 - все, 1 - только родители, 2 - только я
-        if (chipGroupVisibility.getCheckedChipId() != View.NO_ID) {
-            Chip selected = chipGroupVisibility.findViewById(chipGroupVisibility.getCheckedChipId());
-            if (selected != null) {
-                if (selected.getText().equals("Только родители")) visibilityOption = 1;
-                else if (selected.getText().equals("Только я")) visibilityOption = 2;
-            }
-        }
-
-        // Сохраняем в фоне
         int finalVisibilityOption = visibilityOption;
         executorService.execute(() -> {
-            // TODO: создать запись в БД с учетом видимости
-            // Пока просто заглушка
+            long entryId = entryRepository.insert(entry);
+            if (entryId != -1) {
+                entryRepository.updateEntryVisibility((int)entryId, finalVisibilityOption, currentUserId);
+            }
+            
             requireActivity().runOnUiThread(() -> {
-                Toast.makeText(getContext(), "Запись добавлена", Toast.LENGTH_SHORT).show();
-                dismiss();
+                if(entryId != -1){
+                    Toast.makeText(getContext(), "Запись сохранена", Toast.LENGTH_SHORT).show();
+                    // Обновляем список записей в MainActivity
+                    if (getActivity() instanceof MainActivity) {
+                        ((MainActivity) getActivity()).loadEntries();
+                    }
+                    dismiss();
+                } else {
+                    Toast.makeText(getContext(), "Ошибка сохранения", Toast.LENGTH_SHORT).show();
+                }
             });
         });
     }
