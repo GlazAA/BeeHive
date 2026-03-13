@@ -16,7 +16,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import com.example.beehive.R;
 import com.example.beehive.ui.model.User;
 import com.example.beehive.ui.repository.UserRepository;
-import com.example.beehive.ui.sync.SyncScheduler;
+import com.example.beehive.ui.security.PasswordHasher;
 
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -44,7 +44,6 @@ public class LoginActivity extends AppCompatActivity {
         initViews();
         setupListeners();
 
-        // ВАЖНО: создаем пользователей в фоновом потоке!
         createDefaultUsersInBackground();
     }
 
@@ -56,22 +55,11 @@ public class LoginActivity extends AppCompatActivity {
     }
 
     private void setupListeners() {
-        btnLogin.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                attemptLogin();
-            }
-        });
+        btnLogin.setOnClickListener(v -> attemptLogin());
     }
 
     private void createDefaultUsersInBackground() {
-        executorService.execute(new Runnable() {
-            @Override
-            public void run() {
-                // Это выполняется в фоновом потоке - безопасно для БД
-                userRepository.createDefaultUsersIfNeeded();
-            }
-        });
+        executorService.execute(() -> userRepository.createDefaultUsersIfNeeded());
     }
 
     private void attemptLogin() {
@@ -90,42 +78,28 @@ public class LoginActivity extends AppCompatActivity {
         btnLogin.setEnabled(false);
         tvError.setVisibility(View.GONE);
 
-        executorService.execute(new Runnable() {
-            @Override
-            public void run() {
-                boolean isPasswordCorrect = userRepository.checkUserPassword(username, password);
+        executorService.execute(() -> {
+            User user = userRepository.getUserByUsername(username);
+            boolean isPasswordCorrect = (user != null) && PasswordHasher.checkPassword(password, user.getPasswordHash());
 
-                mainHandler.post(new Runnable() {
-                    @Override
-                    public void run() {
-                        if (isPasswordCorrect) {
-                            User currentUser = userRepository.getUserByUsername(username);
-                            
-                            if (currentUser != null) {
-                                Toast.makeText(LoginActivity.this, 
-                                    "Добро пожаловать, " + username + "!", 
-                                    Toast.LENGTH_SHORT).show();
+            if (isPasswordCorrect) {
+                int roleId = userRepository.getUserRoleId(user.getId());
+                String role = (roleId == 1) ? "Admin" : "Child";
 
-                                Intent intent = new Intent(LoginActivity.this, MainActivity.class);
-                                intent.putExtra("username", username);
-                                intent.putExtra("userId", currentUser.getId());
-                                
-                                int roleId = userRepository.getUserRoleId(currentUser.getId());
-                                intent.putExtra("userRole", roleId == 1 ? "Admin" : "Child");
-                                
-                                startActivity(intent);
-                                finish();
-                            } else {
-                                tvError.setVisibility(View.VISIBLE);
-                                tvError.setText("Ошибка при загрузке пользователя");
-                                btnLogin.setEnabled(true);
-                            }
-                        } else {
-                            tvError.setVisibility(View.VISIBLE);
-                            tvError.setText("Неверный логин или пароль");
-                            btnLogin.setEnabled(true);
-                        }
-                    }
+                mainHandler.post(() -> {
+                    Toast.makeText(LoginActivity.this, "Добро пожаловать, " + username + "!", Toast.LENGTH_SHORT).show();
+                    Intent intent = new Intent(LoginActivity.this, MainActivity.class);
+                    intent.putExtra("username", username);
+                    intent.putExtra("userId", user.getId());
+                    intent.putExtra("userRole", role);
+                    startActivity(intent);
+                    finish();
+                });
+            } else {
+                mainHandler.post(() -> {
+                    tvError.setVisibility(View.VISIBLE);
+                    tvError.setText("Неверный логин или пароль");
+                    btnLogin.setEnabled(true);
                 });
             }
         });

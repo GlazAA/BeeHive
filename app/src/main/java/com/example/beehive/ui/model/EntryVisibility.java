@@ -2,6 +2,7 @@ package com.example.beehive.ui.model;
 
 import androidx.room.Entity;
 import androidx.room.ForeignKey;
+import androidx.room.Index;
 
 @Entity(tableName = "entry_visibility",
         foreignKeys = {
@@ -14,6 +15,7 @@ import androidx.room.ForeignKey;
                         childColumns = "userId",
                         onDelete = ForeignKey.CASCADE)
         },
+        indices = {@Index("userId")},
         primaryKeys = {"entryId", "userId"})
 public class EntryVisibility {
     private int entryId;
