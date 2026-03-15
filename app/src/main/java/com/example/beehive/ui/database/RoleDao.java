@@ -19,6 +19,9 @@ public interface RoleDao {
     @Query("SELECT * FROM roles WHERE name = :name LIMIT 1")
     Role getRoleByName(String name);
 
+    @Query("SELECT * FROM roles WHERE id = :roleId LIMIT 1")
+    Role getRoleById(int roleId);
+
     @Query("SELECT id FROM roles WHERE name = :name")
     int getRoleIdByName(String name);
 }

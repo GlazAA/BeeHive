@@ -6,9 +6,9 @@
 package com.example.beehive.ui.repository;
 
 import android.content.Context;
-import com.example.beehive.ui.database.AppDatabase;  // ВАЖНО: добавить ui.
-import com.example.beehive.ui.database.RoleDao;      // ВАЖНО: добавить ui.
-import com.example.beehive.ui.model.Role;            // ВАЖНО: добавить ui.
+import com.example.beehive.ui.database.AppDatabase;
+import com.example.beehive.ui.database.RoleDao;
+import com.example.beehive.ui.model.Role;
 
 public class RoleRepository {
 
@@ -23,15 +23,20 @@ public class RoleRepository {
         return roleDao.getRoleByName(name);
     }
 
+    public Role getRoleById(int roleId) {
+        return roleDao.getRoleById(roleId);
+    }
+
     public int getRoleIdByName(String name) {
         return roleDao.getRoleIdByName(name);
     }
 
     public void createDefaultRoles() {
-        if (getRoleByName("Admin") == null) {
+        // Этот метод лучше вызывать в фоновом потоке
+        if (roleDao.getRoleByName("Admin") == null) {
             roleDao.insert(new Role("Admin"));
         }
-        if (getRoleByName("Child") == null) {
+        if (roleDao.getRoleByName("Child") == null) {
             roleDao.insert(new Role("Child"));
         }
     }

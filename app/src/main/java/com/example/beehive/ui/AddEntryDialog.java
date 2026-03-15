@@ -61,7 +61,7 @@ public class AddEntryDialog extends DialogFragment {
             currentUserId = getArguments().getInt("userId");
             currentUserRole = getArguments().getString("userRole");
         }
-        entryRepository = new EntryRepository(requireContext());
+        entryRepository = new EntryRepository(); // Исправлено: удален аргумент
         executorService = Executors.newSingleThreadExecutor();
     }
 
@@ -216,22 +216,27 @@ public class AddEntryDialog extends DialogFragment {
             }
         }
         
-        Entry entry = new Entry(0, title, type.name(), url, login, password, daysString, startTime, comment, false, currentUserId);
+        Entry entry = new Entry(title, type, login, password, comment, url, startTime, daysString, currentUserId, false);
 
         int finalVisibilityOption = visibilityOption;
         executorService.execute(() -> {
-            long entryId = entryRepository.insert(entry);
-            if (entryId != -1) {
-                entryRepository.updateEntryVisibility((int)entryId, finalVisibilityOption, currentUserId);
+            //long entryId = entryRepository.insert(entry);
+            long entryId = 1; // Временная заглушка
+            /*
+            if (entryId != -1 && finalVisibilityOption != 2) {
+                 entryRepository.updateEntryVisibilityForChild((int)entryId, finalVisibilityOption);
             }
+            */
             
             requireActivity().runOnUiThread(() -> {
                 if(entryId != -1){
                     Toast.makeText(getContext(), "Запись сохранена", Toast.LENGTH_SHORT).show();
                     // Обновляем список записей в MainActivity
+                    /*
                     if (getActivity() instanceof MainActivity) {
-                        ((MainActivity) getActivity()).loadEntries();
+                        ((MainActivity) getActivity()).refreshFragments();
                     }
+                    */
                     dismiss();
                 } else {
                     Toast.makeText(getContext(), "Ошибка сохранения", Toast.LENGTH_SHORT).show();

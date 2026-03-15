@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<navigation xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/nav_graph"
+    app:startDestination="@id/entriesFragment">
+
+    <fragment
+        android:id="@+id/entriesFragment"
+        android:name="com.example.beehive.ui.EntriesFragment"
+        android:label="Entries"
+        tools:layout="@layout/fragment_entries">
+        <action
+            android:id="@+id/action_entriesFragment_to_entryDetailFragment"
+            app:destination="@id/entryDetailFragment" />
+        <argument
+            android:name="userId"
+            app:argType="string" />
+        <argument
+            android:name="userRole"
+            app:argType="string" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/entryDetailFragment"
+        android:name="com.example.beehive.ui.EntryDetailFragment"
+        android:label="Entry Details"
+        tools:layout="@layout/fragment_entry_detail">
+        <argument
+            android:name="entry"
+            app:argType="com.example.beehive.ui.model.Entry"
+            app:nullable="true" />
+        <argument
+            android:name="userId"
+            app:argType="string" />
+    </fragment>
+
+</navigation>

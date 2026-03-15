@@ -52,6 +52,11 @@ public class UserRepository {
         return userDao.getRoleIdByUserId(userId);
     }
 
+    public String getRoleNameById(int roleId) {
+        Role role = roleRepository.getRoleById(roleId);
+        return role != null ? role.getName() : null;
+    }
+
     public void createDefaultUsersIfNeeded() {
         // Этот метод вызывается в фоновом потоке из LoginActivity
         List<User> users = userDao.getAllUsers();

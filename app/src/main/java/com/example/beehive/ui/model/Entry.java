@@ -8,10 +8,11 @@ import androidx.room.Entity;
 import androidx.room.PrimaryKey;
 import androidx.room.TypeConverters;
 import com.example.beehive.ui.database.Converters;
+import java.io.Serializable;
 
 @Entity(tableName = "entries")
 @TypeConverters({Converters.class})
-public class Entry {
+public class Entry implements Serializable {
 
     @PrimaryKey(autoGenerate = true)
     private int id;

@@ -1,102 +1,90 @@
 // Файл: EntryRepository.java
-// Пакет: com.example.beehive.ui.repository
-// Назначение: Репозиторий для работы с записями, промежуточный слой между UI и базой данных.
-
+// Назначение: Репозиторий для управления данными о записях.
 package com.example.beehive.ui.repository;
 
-import android.content.Context;
-import com.example.beehive.ui.database.AppDatabase;
-import com.example.beehive.ui.database.EntryDao;
 import com.example.beehive.ui.model.Entry;
-import com.example.beehive.ui.sync.SyncManager;
+//import com.google.firebase.database.DataSnapshot;
+//import com.google.firebase.database.DatabaseError;
+//import com.google.firebase.database.DatabaseReference;
+//import com.google.firebase.database.FirebaseDatabase;
+//import com.google.firebase.database.ValueEventListener;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
 public class EntryRepository {
 
-    private final EntryDao entryDao;
-    private final SyncManager syncManager;
-    private final ExecutorService executorService;
+    //private DatabaseReference databaseReference;
 
-    public EntryRepository(Context context) {
-        AppDatabase database = AppDatabase.getDatabase(context);
-        entryDao = database.entryDao();
-        syncManager = new SyncManager(context); // Создаем экземпляр SyncManager
-        executorService = Executors.newSingleThreadExecutor();
+    public interface OnDataReadyCallback {
+        void onDataReady(List<Entry> entries);
     }
 
-    // --- Методы для работы с данными --- //
-
-    public long insert(Entry entry) {
-        long id = entryDao.insert(entry);
-        // Добавляем операцию в очередь на синхронизацию
-        if (id != -1) {
-            entry.setId((int) id);
-            syncManager.addToSyncQueue("INSERT", "entries", (int) id, entry);
-        }
-        return id;
+    public EntryRepository() {
+        //databaseReference = FirebaseDatabase.getInstance().getReference("entries");
     }
 
-    public void update(Entry entry) {
-        entryDao.update(entry);
-        // Добавляем операцию в очередь на синхронизацию
-        syncManager.addToSyncQueue("UPDATE", "entries", entry.getId(), entry);
-    }
+    public void getEntries(String userId, String filter, OnDataReadyCallback callback) {
+        /*
+        databaseReference.addValueEventListener(new ValueEventListener() {
+            @Override
+            public void onDataChange(DataSnapshot dataSnapshot) {
+                List<Entry> entries = new ArrayList<>();
+                for (DataSnapshot snapshot : dataSnapshot.getChildren()) {
+                    Entry entry = snapshot.getValue(Entry.class);
+                    if (entry != null) {
+                        boolean matches = false;
+                        switch (filter) {
+                            case "my":
+                                if (entry.getUserId().equals(userId)) {
+                                    matches = true;
+                                }
+                                break;
+                            case "deleted":
+                                if (entry.isDeleted()) {
+                                    matches = true;
+                                }
+                                break;
+                            case "all":
+                            default:
+                                matches = true;
+                                break;
+                        }
+                        if (matches) {
+                            entries.add(entry);
+                        }
+                    }
+                }
+                callback.onDataReady(entries);
+            }
 
-    public void markAsDeleted(int entryId) {
-        entryDao.markAsDeleted(entryId);
-        // Добавляем операцию в очередь на синхронизацию (мягкое удаление)
-         syncManager.addToSyncQueue("DELETE_SOFT", "entries", entryId, null);
-    }
-
-    public void restore(int entryId) {
-        entryDao.restore(entryId);
-         // Добавляем операцию в очередь на синхронизацию
-        syncManager.addToSyncQueue("RESTORE", "entries", entryId, null);
-    }
-    
-    public void deletePermanently(int entryId) {
-        entryDao.deletePermanently(entryId);
-        // Добавляем операцию в очередь на синхронизацию (полное удаление)
-        syncManager.addToSyncQueue("DELETE_HARD", "entries", entryId, null);
-    }
-
-
-    // --- Методы для получения данных (выполняются в фоновом потоке) --- //
-
-    public void getEntriesByUser(int userId, OnDataReadyCallback<List<Entry>> callback) {
-        executorService.execute(() -> {
-            List<Entry> entries = entryDao.getEntriesByUser(userId);
-            callback.onDataReady(entries);
+            @Override
+            public void onCancelled(DatabaseError databaseError) {
+                // Handle error
+            }
         });
+        */
+        if (callback != null) {
+            callback.onDataReady(new ArrayList<>());
+        }
     }
 
-    public void getEntryById(int entryId, OnDataReadyCallback<Entry> callback) {
-        executorService.execute(() -> {
-            Entry entry = entryDao.getEntryById(entryId);
-            callback.onDataReady(entry);
-        });
-    }
-    
-    public void getAllEntries(OnDataReadyCallback<List<Entry>> callback) {
-        executorService.execute(() -> {
-            List<Entry> entries = entryDao.getAllEntries();
-            callback.onDataReady(entries);
-        });
+    public void addEntry(Entry entry) {
+        /*
+        String id = databaseReference.push().getKey();
+        entry.setId(id);
+        databaseReference.child(id).setValue(entry);
+        */
     }
 
-    // Интерфейс для асинхронного получения данных
-    public interface OnDataReadyCallback<T> {
-        void onDataReady(T data);
+    public void updateEntry(Entry entry) {
+        //databaseReference.child(entry.getId()).setValue(entry);
     }
-    
-     public void shutdown() {
-        if (syncManager != null) {
-            syncManager.shutdown();
-        }
-         if (executorService != null) {
-            executorService.shutdown();
-        }
+
+    public void markAsDeleted(String entryId, boolean deleted) {
+        //databaseReference.child(entryId).child("deleted").setValue(deleted);
+    }
+
+    public void deletePermanently(String entryId) {
+        //databaseReference.child(entryId).removeValue();
     }
 }
